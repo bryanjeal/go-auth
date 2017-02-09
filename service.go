@@ -1,3 +1,17 @@
+// Copyright 2017 Bryan Jeal <bryan@jeal.ca>
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+// 	http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package auth
 
 import (
@@ -22,7 +36,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/markbates/goth"
 	"github.com/satori/go.uuid"
-	"gopkg.in/mailgun/mailgun-go.v1"
 )
 
 // Errors
@@ -84,12 +97,10 @@ func NewService(db *sqlx.DB, mg mailgun.Mailgun, nonce nonce.Service, tpl *tmpl.
 		tpl:   tpl,
 	}
 
-	// TODO
-	// Move hardcoded Template Strings to templates.go
 	template.Must(s.tpl.AddTemplate("auth.baseHTMLEmailTemplate", "", baseHTMLEmailTemplate))
-	template.Must(s.tpl.AddTemplate("auth.NewUserEmail", "auth.baseHTMLEmailTemplate", `{{define "title"}}Welcome New User{{end}}{{define "content"}}<p style="margin:0;padding:1em 0 0 0;line-height:1.5em;font-family:Helvetica Neue, Helvetica, Arial, sans-serif;font-size:14px;color:#000;"> Hello %recipient.firstname% %recipient.lastname%, <br/> <br/> Welcome to our service. Thank you for signing up.<br/> <br/> </p>{{end}}`))
-	template.Must(s.tpl.AddTemplate("auth.PasswordResetEmail", "auth.baseHTMLEmailTemplate", `{{define "title"}}Password Reset{{end}}{{define "content"}}<p style="margin:0;padding:1em 0 0 0;line-height:1.5em;font-family:Helvetica Neue, Helvetica, Arial, sans-serif;font-size:14px;color:#000;"> Hello %recipient.firstname% %recipient.lastname%, <br/> <br/> Forgot your password? No problem! <br/> <br/> To reset your password, click the following link: <br/> <a href="https://www.example.com/auth/password-reset/%recipient.token%">Reset Password</a> <br/> <br/> If you did not request to have your password reset you can safely ignore this email. Rest assured your customer account is safe. <br/> <br/> </p>{{end}}`))
-	template.Must(s.tpl.AddTemplate("auth.PasswordResetConfirmEmail", "auth.baseHTMLEmailTemplate", `{{define "title"}}Password Reset Complete{{end}}{{define "content"}}<p style="margin:0;padding:1em 0 0 0;line-height:1.5em;font-family:Helvetica Neue, Helvetica, Arial, sans-serif;font-size:14px;color:#000;"> Hello %recipient.firstname% %recipient.lastname%, <br/> <br/> Your account's password was recently changed. <br/> <br/> </p>{{end}}`))
+	template.Must(s.tpl.AddTemplate("auth.NewUserEmail", "auth.baseHTMLEmailTemplate", newUserEmailTmpl))
+	template.Must(s.tpl.AddTemplate("auth.PasswordResetEmail", "auth.baseHTMLEmailTemplate", passwdResetEmailTmpl))
+	template.Must(s.tpl.AddTemplate("auth.PasswordResetConfirmEmail", "auth.baseHTMLEmailTemplate", passwdResetConfirmEmailTmpl))
 
 	return s
 }

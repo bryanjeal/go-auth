@@ -1,3 +1,17 @@
+// Copyright 2017 Bryan Jeal <bryan@jeal.ca>
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+// 	http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package auth
 
 import (
@@ -24,7 +38,10 @@ type User struct {
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 	DeletedAt   time.Time `db:"deleted_at"`
+	LoginAt     time.Time `db:"login_at"`
 	AvatarURL   string    `db:"avatar_url"`
+	Groups      []Group
+	Permissions []Permission
 	Providers   []goth.User
 	newPassword bool
 	rawPassword string

@@ -1,3 +1,17 @@
+// Copyright 2017 Bryan Jeal <bryan@jeal.ca>
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+
+// 	http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package auth
 
 import (
@@ -16,11 +30,45 @@ import (
 
 const sqlCreateUserTable string = `
 PRAGMA foreign_keys = OFF;
+
 -- Schema: auth
 ATTACH "auth.sdb" AS "auth";
 BEGIN;
+CREATE TABLE "auth"."group"(
+  "id" BINARY(16) PRIMARY KEY NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "slug" VARCHAR(255) NOT NULL,
+  CONSTRAINT "name_UNIQUE"
+    UNIQUE("name"),
+  CONSTRAINT "slug_UNIQUE"
+    UNIQUE("slug")
+);
+CREATE TABLE "auth"."permission"(
+  "id" BINARY(16) PRIMARY KEY NOT NULL,
+  "name" VARCHAR(255) NOT NULL,
+  "slug" VARCHAR(255) NOT NULL,
+  "object" VARCHAR(255),
+  CONSTRAINT "name_UNIQUE"
+    UNIQUE("name"),
+  CONSTRAINT "slug_UNIQUE"
+    UNIQUE("slug")
+);
+CREATE INDEX "auth"."permission.idx_object" ON "permission" ("object");
+CREATE INDEX "auth"."permission.idx_slug" ON "permission" ("slug");
+CREATE TABLE "auth"."group_permission"(
+  "id_group" BINARY(16) NOT NULL,
+  "id_permission" BINARY(16) NOT NULL,
+  CONSTRAINT "fk_group"
+    FOREIGN KEY("id_group")
+    REFERENCES "group"("id"),
+  CONSTRAINT "fk_permission"
+    FOREIGN KEY("id_permission")
+    REFERENCES "permission"("id")
+);
+CREATE INDEX "auth"."group_permission.idx_group" ON "group_permission" ("id_group");
+CREATE INDEX "auth"."group_permission.idx_permission" ON "group_permission" ("id_permission");
 CREATE TABLE "auth"."user"(
-  "id" BINARY(16) NOT NULL,
+  "id" BINARY(16) PRIMARY KEY NOT NULL,
   "email" VARCHAR(255) NOT NULL,
   "password" VARCHAR(255) NOT NULL,
   "firstname" VARCHAR(45) NOT NULL,
@@ -31,9 +79,37 @@ CREATE TABLE "auth"."user"(
   "created_at" DATETIME NOT NULL,
   "updated_at" DATETIME NOT NULL,
   "deleted_at" DATETIME NOT NULL,
-  "avatar_url" VARCHAR(45)
+  "login_at" DATETIME NOT NULL,
+  "avatar_url" VARCHAR(45),
+  CONSTRAINT "email_UNIQUE"
+    UNIQUE("email")
 );
-COMMIT;`
+CREATE TABLE "auth"."user_group"(
+  "id_user" BINARY(16) NOT NULL,
+  "id_group" BINARY(16) NOT NULL,
+  CONSTRAINT "fk_user"
+    FOREIGN KEY("id_user")
+    REFERENCES "user"("id"),
+  CONSTRAINT "fk_group"
+    FOREIGN KEY("id_group")
+    REFERENCES "group"("id")
+);
+CREATE INDEX "auth"."user_group.idx_user" ON "user_group" ("id_user");
+CREATE INDEX "auth"."user_group.idx_group" ON "user_group" ("id_group");
+CREATE TABLE "auth"."user_permission"(
+  "id_user" BINARY(16) NOT NULL,
+  "id_permission" BINARY(16) NOT NULL,
+  CONSTRAINT "fk_user"
+    FOREIGN KEY("id_user")
+    REFERENCES "user"("id"),
+  CONSTRAINT "fk_permission"
+    FOREIGN KEY("id_permission")
+    REFERENCES "permission"("id")
+);
+CREATE INDEX "auth"."user_permission.idx_user" ON "user_permission" ("id_user");
+CREATE INDEX "auth"."user_permission.idx_permission" ON "user_permission" ("id_permission");
+COMMIT;
+`
 
 // tUser is the base test user
 var tUser User
