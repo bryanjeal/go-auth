@@ -24,6 +24,9 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+const sqlxUserByID = "SELECT * FROM user WHERE id=$1"
+const sqlxUserByEmail = "SELECT * FROM user WHERE email=$1"
+
 // User Model holds account details and a slice of Providers
 // Providers are a "linked" oAuth accounts (associated by email address)
 type User struct {

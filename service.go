@@ -26,6 +26,7 @@ import (
 	"github.com/bryanjeal/go-helpers"
 	"github.com/bryanjeal/go-nonce"
 	tmpl "github.com/bryanjeal/go-tmpl"
+	mailgun "gopkg.in/mailgun/mailgun-go.v1"
 
 	// handle mysql database
 	_ "github.com/go-sql-driver/mysql"
@@ -107,7 +108,7 @@ func NewService(db *sqlx.DB, mg mailgun.Mailgun, nonce nonce.Service, tpl *tmpl.
 
 func (s *authService) NewUserLocal(email, password, firstName, lastName string, isSuperuser bool) (User, error) {
 	eUser := User{}
-	err := s.db.Get(&eUser, "SELECT * FROM user WHERE email=$1", email)
+	err := s.db.Get(&eUser, sqlxUserByEmail, email)
 	if err == nil {
 		return User{}, ErrAlreadyExists
 	} else if err != sql.ErrNoRows {
@@ -191,20 +192,12 @@ func (s *authService) GetUser(id uuid.UUID) (User, error) {
 		return User{}, ErrInvalidID
 	}
 
-	u := User{}
-	err := s.db.Get(&u, "SELECT * FROM user WHERE id=$1", id)
-	if err != nil && err != sql.ErrNoRows {
-		return User{}, err
-	} else if err == sql.ErrNoRows {
-		return User{}, ErrUserNotFound
-	}
-
-	return u, nil
+	return s.getUserHelper(sqlxUserByID, id)
 }
 
 func (s *authService) UpdateUser(u User) (User, error) {
 	eUser := User{}
-	err := s.db.Get(&eUser, "SELECT * FROM user WHERE email=$1", u.Email)
+	err := s.db.Get(&eUser, sqlxUserByEmail, u.Email)
 	if err == sql.ErrNoRows {
 		return User{}, ErrUserNotFound
 	} else if err != nil {
@@ -255,7 +248,7 @@ func (s *authService) AuthenticateUser(email, password string) (User, error) {
 	}
 
 	// Get user from database
-	u, err := s.getUserByEmail(e.Address)
+	u, err := s.getUserHelper(sqlxUserByEmail, e.Address)
 	if err != nil {
 		return User{}, err
 	}
@@ -280,7 +273,7 @@ func (s *authService) BeginPasswordReset(email string) error {
 	}
 
 	// Get user from database
-	u, err := s.getUserByEmail(e.Address)
+	u, err := s.getUserHelper(sqlxUserByEmail, e.Address)
 	if err != nil {
 		return err
 	}
@@ -326,7 +319,7 @@ func (s *authService) CompletePasswordReset(token, email, password string) (User
 	}
 
 	// Get User
-	u, err := s.getUserByEmail(e.Address)
+	u, err := s.getUserHelper(sqlxUserByEmail, e.Address)
 	if err != nil {
 		return User{}, err
 	}
@@ -379,14 +372,14 @@ func (s *authService) CompletePasswordReset(token, email, password string) (User
 	return u, nil
 }
 
-// getUserByEmail gets a user from the database by email address
-func (s *authService) getUserByEmail(email string) (User, error) {
+// getUser gets a user and populates all its groups and permissions
+func (s *authService) getUserHelper(query string, args ...interface{}) (User, error) {
 	u := User{}
-	err := s.db.Get(&u, "SELECT * FROM user WHERE email=$1", email)
+	err := s.db.Get(&u, query, args...)
 	if err != nil && err != sql.ErrNoRows {
 		return User{}, err
 	} else if err == sql.ErrNoRows {
-		return User{}, ErrIncorrectAuth
+		return User{}, ErrUserNotFound
 	}
 
 	return u, nil
